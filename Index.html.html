@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acta de reunión</title>
+  <style>
+    :root {
+      --azul: #1a3a5c;
+      --azul-claro: #eaf1f8;
+      --borde: #c7d2dd;
+      --rojo: #b3261e;
+      --verde: #1e6b3d;
+      --texto: #22303f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f4f6f8;
+      color: var(--texto);
+      margin: 0;
+      padding: 0 0 60px 0;
+    }
+    header {
+      background: var(--azul);
+      color: #fff;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    header h1 { margin: 0; font-size: 1.25rem; }
+    header p { margin: 4px 0 0; font-size: 0.85rem; opacity: 0.85; }
+    main {
+      max-width: 640px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+    .aviso {
+      background: #fff8e1;
+      border: 1px solid #e0c46c;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.88rem;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .campo {
+      background: #fff;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .campo label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+    .campo .ayuda {
+      font-size: 0.8rem;
+      color: #5b6b7a;
+      margin-bottom: 8px;
+    }
+    textarea, input[type="text"], input[type="email"], select {
+      width: 100%;
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: vertical;
+      background: #fbfcfd;
+    }
+    textarea { min-height: 70px; }
+    .fila-mic {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    button.mic {
+      background: var(--azul-claro);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--azul);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button.mic.grabando {
+      background: var(--rojo);
+      color: #fff;
+      border-color: var(--rojo);
+    }
+    button.mic:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sugerencias {
+      background: #f6f9fc;
+      border: 1px dashed var(--borde);
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .chip-acuerdo {
+      display: inline-block;
+      background: var(--azul-claro);
+      border: 1px solid var(--borde);
+      color: var(--azul);
+      border-radius: 16px;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      margin: 0 6px 6px 0;
+      cursor: pointer;
+      text-align: left;
+    }
+    .chip-acuerdo:disabled {
+      background: #e6f4ea;
+      color: var(--verde);
+      border-color: #b6ddc2;
+      cursor: default;
+    }
+    .checkbox-privacidad {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #fdeeee;
+      border: 1px solid #e3b3b0;
+      border-radius: 10px;
+      padding: 14px;
+      margin: 18px 0;
+      font-size: 0.88rem;
+    }
+    .checkbox-privacidad input { margin-top: 3px; }
+    button.enviar {
+      width: 100%;
+      background: var(--azul);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.enviar:disabled { opacity: 0.6; cursor: not-allowed; }
+    #estado {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    #estado.ok { display: block; background: #e6f4ea; color: var(--verde); border: 1px solid #b6ddc2; }
+    #estado.error { display: block; background: #fdeeee; color: var(--rojo); border: 1px solid #e3b3b0; }
+    #estado.cargando { display: block; background: var(--azul-claro); color: var(--azul); border: 1px solid var(--borde); }
+    .no-mic { font-size: 0.78rem; color: #8a5a00; margin-top: 6px; }
+    .config-pendiente {
+      background: #fdeeee;
+      border: 2px dashed var(--rojo);
+      color: var(--rojo);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Acta de reunión con familia</h1>
+    <p>Sistema institucional — sin registro. Respondé por voz o por escrito.</p>
+  </header>
+
+  <main>
+    <div id="avisoConfig" class="config-pendiente" style="display:none">
+      ⚠️ Falta configurar la URL del backend. Editá la constante URL_APPS_SCRIPT
+      al principio del &lt;script&gt; de este archivo.
+    </div>
+
+    <div class="aviso">
+      <strong>Antes de empezar:</strong> no menciones nombres reales de estudiantes ni de adultos responsables.
+      Usá "Estudiante 1", "Adulto Responsable 1", etc. El acta se genera automáticamente con este formato
+      y se envía únicamente a una casilla del dominio institucional.
+    </div>
+
+    <form id="formActa">
+      <div class="campo">
+        <label for="motivoCategoria">1. Motivo de la citación</label>
+        <div class="ayuda">Elegí la categoría que mejor describe el motivo de la reunión.</div>
+        <select id="motivoCategoria" required>
+          <option value="">Seleccioná una opción…</option>
+          <option value="trayectoria">Trayectoria académica (áreas en curso, avances en la trayectoria, dificultades en el aprendizaje, inasistencias, etc.)</option>
+          <option value="aec">Incumplimiento de los AEC (faltas de respeto a compañeros/as y/o docentes, llegadas tarde, uso del celular en el aula, etc.)</option>
+          <option value="informativa">Reunión informativa (avisos institucionales y/o familiares, otros)</option>
+          <option value="otros">Otros</option>
+        </select>
+
+        <div id="motivoOtroContenedor" style="display:none; margin-top:10px;">
+          <label for="motivoOtroTexto" style="font-weight:600; font-size:0.88rem;">Especificá el motivo</label>
+          <input type="text" id="motivoOtroTexto" placeholder="Detallá el motivo de la citación">
+        </div>
+
+        <div id="sugerenciasAcuerdos" class="sugerencias" style="display:none">
+          <div class="ayuda" style="margin-bottom:8px;"><strong>Acuerdos sugeridos para este motivo</strong> (opcional, tocá para agregarlos a la sección 5):</div>
+          <div id="chipsAcuerdos"></div>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="curso">2. Curso / año del estudiante</label>
+        <div class="ayuda">Sin nombres. Ej: "3.° año, división B".</div>
+        <input type="text" id="curso" required>
+      </div>
+
+      <div class="campo">
+        <label for="hechos">3. Síntesis de los hechos conversados</label>
+        <div class="ayuda">Qué le informó la institución a la familia.</div>
+        <textarea id="hechos" required></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="descargo">4. Descargo / postura del adulto responsable</label>
+        <div class="ayuda">Qué respondió o argumentó la familia.</div>
+        <textarea id="descargo" required></textarea>
+        <div class="fila-mic">
+          <button type="button" class="mic" data-target="descargo">🎤 Dictar</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="acuerdos">5. Acuerdos y compromisos tomados</label>
+        <div class="ayuda">Uno por línea (presioná Enter entre cada acuerdo). Podés usar las sugerencias de arriba o escribir los tuyos.</div>
+        <textarea id="acuerdos" required style="min-height:100px"></textarea>
+        <div class="fila-mic">
+          <button type="button" class="mic" data-target="acuerdos">🎤 Dictar</button>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="seguimiento">6. Fecha de seguimiento / próxima revisión</label>
+        <input type="text" id="seguimiento" placeholder="Ej: 30/09/2026 o 'en 15 días'" required>
+      </div>
+
+      <div class="campo">
+        <label for="emailDestino">Enviar acta a (correo institucional)</label>
+        <div class="ayuda">Solo se acepta @esrn36.edu.ar</div>
+        <input type="email" id="emailDestino" placeholder="nombre.apellido@esrn36.edu.ar" required>
+      </div>
+
+      <label class="checkbox-privacidad">
+        <input type="checkbox" id="confirmoPrivacidad" required>
+        <span>Confirmo que no incluí nombres reales de estudiantes ni de adultos responsables en las respuestas anteriores.</span>
+      </label>
+
+      <button type="submit" class="enviar" id="btnEnviar">Generar y enviar acta</button>
+    </form>
+
+    <div id="estado"></div>
+  </main>
+
+  <!-- Iframe oculto: el formulario le apunta a él para postear sin salir de
+       esta página y sin chocar con las restricciones de CORS. -->
+  <iframe name="targetFrame" id="targetFrame" style="display:none"></iframe>
+
+  <script>
+    // ====================================================================
+    // CONFIGURACIÓN: pegá acá la URL de tu implementación de Apps Script
+    // (Implementar → Gestionar implementaciones → copiar "URL de la
+    // aplicación web"). Tiene que terminar en /exec
+    // ====================================================================
+    var URL_APPS_SCRIPT = 'PEGAR_ACA_LA_URL_DE_APPS_SCRIPT_TERMINADA_EN_/exec';
+    // ====================================================================
+
+    if (!URL_APPS_SCRIPT || URL_APPS_SCRIPT.indexOf('PEGAR_ACA') !== -1) {
+      document.getElementById('avisoConfig').style.display = 'block';
+    }
+
+    // ---------- Motivo de la citación: categorías y acuerdos sugeridos ----------
+    var CATEGORIAS_MOTIVO = {
+      trayectoria: {
+        etiqueta: 'Trayectoria académica',
+        acuerdos: [
+          'Elaboración de un plan de acompañamiento pedagógico personalizado, con seguimiento quincenal.',
+          'Compromiso de asistencia regular a los espacios de apoyo escolar/tutorías en las áreas con dificultades.',
+          'Derivación al Equipo de Orientación Escolar (EOE) para evaluación y acompañamiento.',
+          'Firma de acta compromiso de asistencia y seguimiento de la trayectoria escolar.'
+        ]
+      },
+      aec: {
+        etiqueta: 'Incumplimiento de los Acuerdos Escolares de Convivencia (AEC)',
+        acuerdos: [
+          'Firma de acta compromiso de convivencia por parte del adulto responsable y el estudiante.',
+          'Compromiso de cumplimiento del Acuerdo Escolar de Convivencia (AEC), en particular en materia de puntualidad y uso de dispositivos electrónicos en el aula.',
+          'Participación en una instancia de mediación escolar con las partes involucradas.',
+          'Derivación al Equipo de Orientación Escolar (EOE) para trabajo sobre pautas de convivencia.'
+        ]
+      },
+      informativa: {
+        etiqueta: 'Reunión informativa',
+        acuerdos: [
+          'Toma de conocimiento por parte del adulto responsable de la información institucional comunicada.',
+          'Compromiso de canalizar futuras consultas a través de los canales institucionales habituales.',
+          'Actualización de los datos de contacto del adulto responsable ante la institución.',
+          'Sin medidas adicionales; se deja constancia de la notificación realizada.'
+        ]
+      },
+      otros: {
+        etiqueta: '',
+        acuerdos: [
+          'Firma de acta compromiso.',
+          'Derivación interna al Equipo de Orientación Escolar (EOE).',
+          'Pautar una nueva instancia de seguimiento con la familia.',
+          'Otro acuerdo a especificar según la situación particular.'
+        ]
+      }
+    };
+
+    var motivoSelect = document.getElementById('motivoCategoria');
+    var motivoOtroContenedor = document.getElementById('motivoOtroContenedor');
+    var motivoOtroTexto = document.getElementById('motivoOtroTexto');
+    var sugerenciasAcuerdos = document.getElementById('sugerenciasAcuerdos');
+    var chipsAcuerdos = document.getElementById('chipsAcuerdos');
+    var acuerdosTextarea = document.getElementById('acuerdos');
+    var agregados = {};
+
+    motivoSelect.addEventListener('change', function () {
+      var cat = motivoSelect.value;
+      motivoOtroContenedor.style.display = (cat === 'otros') ? 'block' : 'none';
+      motivoOtroTexto.required = (cat === 'otros');
+
+      chipsAcuerdos.innerHTML = '';
+      agregados = {};
+
+      if (cat && CATEGORIAS_MOTIVO[cat]) {
+        sugerenciasAcuerdos.style.display = 'block';
+        CATEGORIAS_MOTIVO[cat].acuerdos.forEach(function (texto) {
+          var chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'chip-acuerdo';
+          chip.textContent = '+ ' + texto;
+          chip.addEventListener('click', function () {
+            if (agregados[texto]) return;
+            var actual = acuerdosTextarea.value;
+            acuerdosTextarea.value = (actual && actual.trim() !== '')
+              ? (actual.replace(/\n+$/, '') + '\n' + texto)
+              : texto;
+            agregados[texto] = true;
+            chip.textContent = '✓ Agregado';
+            chip.disabled = true;
+          });
+          chipsAcuerdos.appendChild(chip);
+        });
+      } else {
+        sugerenciasAcuerdos.style.display = 'none';
+      }
+    });
+
+    function obtenerMotivoFinal() {
+      var cat = motivoSelect.value;
+      if (cat === 'otros') {
+        return motivoOtroTexto.value.trim();
+      }
+      return CATEGORIAS_MOTIVO[cat] ? CATEGORIAS_MOTIVO[cat].etiqueta : '';
+    }
+
+    // ---------- Dictado por voz (Web Speech API), con degradación a texto manual ----------
+    var SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var reconocimientoActivo = null;
+    var botonActivo = null;
+
+    document.querySelectorAll('button.mic').forEach(function (boton) {
+      if (!SpeechRecognitionAPI) {
+        boton.disabled = true;
+        boton.textContent = '🎤 No disponible en este navegador';
+        var aviso = document.createElement('div');
+        aviso.className = 'no-mic';
+        aviso.textContent = 'El dictado por voz no está disponible acá. Escribí la respuesta manualmente.';
+        boton.parentNode.appendChild(aviso);
+        return;
+      }
+      boton.addEventListener('click', function () {
+        var targetId = boton.getAttribute('data-target');
+        var textarea = document.getElementById(targetId);
+
+        if (reconocimientoActivo && botonActivo === boton) {
+          reconocimientoActivo.stop();
+          return;
+        }
+        if (reconocimientoActivo) {
+          reconocimientoActivo.stop();
+        }
+
+        var rec = new SpeechRecognitionAPI();
+        rec.lang = 'es-AR';
+        rec.interimResults = false;
+        rec.continuous = true;
+
+        var textoBase = textarea.value ? (textarea.value.trim() + ' ') : '';
+
+        rec.onstart = function () {
+          reconocimientoActivo = rec;
+          botonActivo = boton;
+          boton.classList.add('grabando');
+          boton.textContent = '⏺ Grabando… tocá para detener';
+        };
+        rec.onresult = function (evento) {
+          var transcripcion = '';
+          for (var i = 0; i < evento.results.length; i++) {
+            transcripcion += evento.results[i][0].transcript;
+          }
+          textarea.value = textoBase + transcripcion;
+        };
+        rec.onerror = function (evento) {
+          if (evento.error === 'not-allowed' || evento.error === 'service-not-allowed') {
+            alert('No se pudo acceder al micrófono. Verificá los permisos del navegador o completá el campo escribiendo.');
+          }
+        };
+        rec.onend = function () {
+          boton.classList.remove('grabando');
+          boton.textContent = '🎤 Dictar';
+          reconocimientoActivo = null;
+          botonActivo = null;
+        };
+
+        try {
+          rec.start();
+        } catch (err) {
+          alert('No se pudo iniciar el dictado. Completá el campo escribiendo.');
+        }
+      });
+    });
+
+    // ---------- Envío del formulario (POST oculto + postMessage, sin CORS) ----------
+    var form = document.getElementById('formActa');
+    var estado = document.getElementById('estado');
+    var btnEnviar = document.getElementById('btnEnviar');
+    var targetFrame = document.getElementById('targetFrame');
+    var REGEX_DOMINIO = /^[^\s@]+@esrn36\.edu\.ar$/i;
+    var timeoutRespuesta = null;
+
+    // Escucha la respuesta que manda Code.gs (doPost) via postMessage desde
+    // el iframe oculto una vez que terminó de generar y enviar el acta.
+    window.addEventListener('message', function (evento) {
+      // Validación laxa de origen: solo aceptamos mensajes que vengan de
+      // dominios de Google (donde corre el Apps Script), para no procesar
+      // mensajes de otras pestañas/orígenes.
+      if (!/google(usercontent)?\.com$/.test(evento.origin.replace(/^https?:\/\//, ''))) {
+        return;
+      }
+      if (!evento.data || typeof evento.data.ok === 'undefined') return;
+
+      if (timeoutRespuesta) {
+        clearTimeout(timeoutRespuesta);
+        timeoutRespuesta = null;
+      }
+
+      btnEnviar.disabled = false;
+      if (evento.data.ok) {
+        mostrarEstado('ok', evento.data.mensaje);
+        form.reset();
+        sugerenciasAcuerdos.style.display = 'none';
+        motivoOtroContenedor.style.display = 'none';
+      } else {
+        mostrarEstado('error', evento.data.mensaje);
+      }
+    });
+
+    form.addEventListener('submit', function (evento) {
+      evento.preventDefault();
+
+      if (!URL_APPS_SCRIPT || URL_APPS_SCRIPT.indexOf('PEGAR_ACA') !== -1) {
+        mostrarEstado('error', 'Falta configurar la URL del backend en este archivo. Avisá a quien administra el sistema.');
+        return;
+      }
+
+      if (!motivoSelect.value) {
+        mostrarEstado('error', 'Elegí un motivo de citación.');
+        return;
+      }
+      if (motivoSelect.value === 'otros' && !motivoOtroTexto.value.trim()) {
+        mostrarEstado('error', 'Especificá el motivo en el campo "Otros".');
+        return;
+      }
+
+      var datos = {
+        motivo: obtenerMotivoFinal(),
+        curso: document.getElementById('curso').value.trim(),
+        hechos: document.getElementById('hechos').value.trim(),
+        descargo: document.getElementById('descargo').value.trim(),
+        acuerdos: document.getElementById('acuerdos').value.trim(),
+        seguimiento: document.getElementById('seguimiento').value.trim(),
+        emailDestino: document.getElementById('emailDestino').value.trim()
+      };
+
+      if (!REGEX_DOMINIO.test(datos.emailDestino)) {
+        mostrarEstado('error', 'El correo debe pertenecer al dominio institucional @esrn36.edu.ar.');
+        return;
+      }
+      if (!document.getElementById('confirmoPrivacidad').checked) {
+        mostrarEstado('error', 'Tenés que confirmar que no incluiste nombres reales antes de continuar.');
+        return;
+      }
+
+      btnEnviar.disabled = true;
+      mostrarEstado('cargando', 'Generando el acta y enviándola por correo… no cierres esta página.');
+
+      enviarPorIframeOculto(datos);
+
+      // Si en 25 segundos no llegó ninguna respuesta (por ejemplo, un
+      // bloqueador de contenido cortó el iframe), avisamos igual en vez de
+      // dejar la página colgada para siempre.
+      timeoutRespuesta = setTimeout(function () {
+        btnEnviar.disabled = false;
+        mostrarEstado('error',
+          'No se pudo confirmar el envío después de 25 segundos. Puede que igual se haya generado el acta: ' +
+          'revisá la casilla de correo antes de reintentar.');
+      }, 25000);
+    });
+
+    function enviarPorIframeOculto(datos) {
+      // Se arma un <form> temporal apuntando al iframe oculto: es un POST
+      // real de navegador, no un fetch(), así que no choca con CORS.
+      var formTemporal = document.createElement('form');
+      formTemporal.method = 'POST';
+      formTemporal.action = URL_APPS_SCRIPT;
+      formTemporal.target = 'targetFrame';
+      formTemporal.style.display = 'none';
+
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'payload';
+      input.value = JSON.stringify(datos);
+      formTemporal.appendChild(input);
+
+      document.body.appendChild(formTemporal);
+      formTemporal.submit();
+      document.body.removeChild(formTemporal);
+    }
+
+    function mostrarEstado(tipo, mensaje) {
+      estado.className = tipo;
+      estado.textContent = mensaje;
+      estado.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  </script>
+</body>
+</html>
